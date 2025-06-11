@@ -112,3 +112,17 @@ async def logout(
     auth_service = AuthService(db)
     await auth_service.revoke_refresh_token(current_user.id)
     return {"message": "Successfully logged out"}
+
+@router.get("/me", response_model=User)
+async def get_current_user_info(
+    current_user: UserModel = Depends(get_current_user)
+):
+    """Get current user information"""
+    return current_user
+
+@router.get("/verify")
+async def verify_token_endpoint(
+    current_user: UserModel = Depends(get_current_user)
+):
+    """Verify if token is valid"""
+    return {"valid": True, "user_id": current_user.id}
