@@ -73,3 +73,42 @@ async def login(
         access_token=access_token,
         refresh_token=refresh_token
     )
+    
+@router.refresh("/refresh", response_model=Token)
+async def refresh_token(
+    token_data: RefreshTokenRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    """Refreshing the access token"""
+    auth_service = AuthService(db)
+    
+    # verify refresh token
+    user = await auth_service.verify_refresh_token(token_data.refresh_token)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_UNAUTHORIZED,
+            detail="Invalid refresh token",
+            headers={"WW-Autheticate": "Bearer"},
+        )
+        
+    # create new tokens
+    access_token = create_access_token(data={"sub": str(user.id)})
+    refresh_token = create_refresh_token(data={"sub": str(user)})
+    
+    # store new refresh token
+    await auth_service.store_refresh(user.id, refresh_token)
+    
+    return Token(
+        access_token=access_token,
+        refresh_token=refresh_token
+    )
+    
+@router.post("/logout")
+async def logout(
+    current_user: UserModel = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Logout user"""
+    auth_service = AuthService(db)
+    await auth_service.revoke_refresh_token(current_user.id)
+    return {"message": "Successfully logged out"}
