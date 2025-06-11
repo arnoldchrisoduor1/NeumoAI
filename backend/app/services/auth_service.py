@@ -62,3 +62,55 @@ class AuthService:
         await self.db.commit()
         await self.db.refresh(db_user)
         return db_user
+    
+    async def get_user_by_id(self, user_id: int) -> Optional[User]:
+        """Get user by ID"""
+        query = select(User).where(User.id == user_id)
+        result = await self.db.execute(query)
+        return result.scalar_one_or_none()
+    
+    async def get_user_by_username(self, username: str) -> Optional[User]:
+        query = select(User).where(User.username == username)
+        result = await self.db.execute(query)
+        return result.scalar_one_or_none()
+    
+    async def store_refresh_token(self, user_id: int, refresh_token: str):
+        """Store refresh token for user"""
+        query = select(User).where(User.id == user_id)
+        result = await self.db.execute(query)
+        user = result.scalar_one_or_none()
+        
+        if user:
+            user.refresh_token = refresh_token
+            await self.db.commit()
+            
+    async def verify_refresh_token(self, refresh_token: str) -> Optional[User]:
+        """Verify refresh token and return user"""
+        # we will verify the token signature and expiration.
+        payload = verify_token(refresh_token, "refresh")
+        if not payload:
+            return None
+        
+        user_id = payload.get("sub")
+        if not user_id:
+            return None
+        
+        # check if token matches stored token.
+        query = select(User).where(User.id == int(user_id))
+        result = await self.db.execute(query)
+        user = result.scalar_one_or_none()
+        
+        if not user or user.refresh_token != refresh_token:
+            return None
+        
+        return user
+    
+    async def revoke_refresh_token(self, user_id: int):
+        """Revoking refresh token(logout)"""
+        query = select(User).where(User.id == user_id)
+        result = await self.db.execute(query)
+        user = result.scalar_one_or_none()
+        
+        if user:
+            user.refresh_token = None
+            await self.db.commit()
