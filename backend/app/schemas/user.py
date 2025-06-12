@@ -8,14 +8,14 @@ class UserBase(BaseModel):
     full_name: Optional[str] = None
     is_active: bool = True
     
-class UserCreate(UserBase): 
+class UserCreate(UserBase):
     password: str
     
     @validator('password')
     def validate_password(cls, v):
         if len(v) < 8:
             raise ValueError('Password must be at leat 8 characters long')
-        raise v
+        return v
     
     @validator('username')
     def validate_username(cls, v):

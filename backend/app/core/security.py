@@ -3,12 +3,12 @@
 from datetime import datetime, timedelta
 from typing import Optional, Union
 from jose import JWTError, jwt
-from passlib.context import CryptoContext
+from passlib.context import CryptContext
 from passlib.hash import bcrypt
 from .config import settings
 
 # password hashing
-pwd_context = CryptoContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verifying the password against its hash"""

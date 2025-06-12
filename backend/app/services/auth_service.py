@@ -15,8 +15,8 @@ class AuthService:
         """Authenticate user by username/email and password"""
         # finding the user by email.
         query = select(User).where(
-            (User.username == login_data.username) |
-            (User.email == login_data.username)
+            # (User.username == login_data.username) |
+            (User.email == login_data.email)
         )
         result = await self.db.execute(query)
         user = result.scalar_one_or_none()

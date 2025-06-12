@@ -1,4 +1,6 @@
 neumo-env
 
+migrations
+
 .env
 .env.example

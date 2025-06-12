@@ -7,6 +7,7 @@ import os
 class Settings(BaseSettings):
     # ===================== DATABASE SETTINGS =====================
     DATABASE_URL: str
+    NEON_DATABASE_URL: str
     
     # ====================== JWT SETTINGS ==================
     SECRET_KEY: str
@@ -15,8 +16,20 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = 30
     
     # ================= API SETTINGS =========================
-    API_VI_STR: str = "/api/vi"
+    API_V1_STR: str = "/api/v1"
     PROJECT_NAME: str = "Neumo AI API"
+    VERSION: str
+    DEBUG: bool
+    
+    # ========= AWS ACCESS ============
+    AWS_ACCESS_KEY_ID: str
+    AWS_SECRET_ACCESS_KEY: str
+    AWS_REGION: str
+    S3_BUCKET_NAME: str
+    
+    # =========== AI MODEL VERSIONING ==============
+    MODEL_PATH: str
+    MODEL_VERSION: str
     
     # ================================= CORS =====================
     BACKEND_CORS_ORIGINS: List[str] = ["http://localhost:3000"]
