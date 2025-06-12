@@ -22,4 +22,4 @@ class User(Base):
     refresh_token = Column(Text, nullable=True)
     
     # Relationships.
-    # predictions = relationship("Prediction", back_populates="user")
+    predictions = relationship("Prediction", back_populates="user")
