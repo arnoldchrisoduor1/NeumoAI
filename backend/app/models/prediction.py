@@ -43,5 +43,5 @@ class Prediction(Base):
     # relationship back to user.
     user = relationship("User", back_populates="predictions")
     
-     def __repr__(self):
+    def __repr__(self):
         return f"<Prediction(id={self.id}, user_id={self.user_id}, class={self.prediction_class}, confidence={self.confidence_score})>"

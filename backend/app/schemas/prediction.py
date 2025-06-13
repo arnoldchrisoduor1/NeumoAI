@@ -2,10 +2,11 @@
 from pydantic import BaseModel, validator, Field, HttpUrl
 from typing import Optional, Literal
 from datetime import datetime
+from .user import User
 
 class PredictionBase(BaseModel):
     
-    img_filename: str
+    image_filename: str
     prediction_class: Literal["NORMAL", "PNEUMONIA"]
     confidence_score: float = Field(..., ge=0.0, le=1.0, description="Confidence score between 0 and 1")
     
@@ -22,12 +23,12 @@ class PredictionCreate(PredictionBase):
 class PredictionUpdate(BaseModel):
     """Schema for updating prediction (mainly for doctor reviews)"""
     reviewed_by_doctor: Optional[bool] = None
-    doctor_notes: Optonal[str] = None
+    doctor_notes: Optional[str] = None
     doctor_diagnosis: Optional[Literal["NORMAL", "PNEUMONIA", "INCONCLUSIVE"]] = None
     is_flagged: Optional[bool] = None
     status: Optional[Literal["Processing", "Completed", "Failed", "Reviewed"]] = None
     
-    @validator('doctore-notes')
+    @validator('doctor_notes')
     def validate_doctor_notes(cls, v, values):
         if values.get('reviewed_by_doctor') and not v:
             raise ValueError('Doctor notes are required when Reviewed by Doctor.')
@@ -53,7 +54,6 @@ class Prediction(PredictionInDB):
 
 class PredictionWithUser(Prediction):
     """prediction schema with user information"""
-    from .user_schemas import User
     user: User
     
 class PredictionSummary(BaseModel):
@@ -83,6 +83,3 @@ class PredictionListResponse(BaseModel):
     total: int
     page: int
     per_page: int
-            
-    
-    

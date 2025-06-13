@@ -5,6 +5,7 @@ import logging
 from .core.config import settings
 from .core.database import test_database_connection, check_migrations_status, get_database_health
 from .api.v1.auth import router as auth_router
+from .api.v1.predictions import router as prediction_router
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -78,6 +79,7 @@ app.add_middleware(
 
 # including the routers.
 app.include_router(auth_router, prefix=f"{settings.API_V1_STR}/auth", tags=["authentication"])
+app.include_router(prediction_router, prefix=f"{settings.API_V1_STR}/prediction", tags=["prediction"])
 
 @app.get("/")
 async def root():

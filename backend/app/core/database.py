@@ -15,11 +15,22 @@ logger = logging.getLogger(__name__)
 ASYNC_DATABASE_URL = settings.DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://")
 
 # the async engine.
-async_engine = create_async_engine(ASYNC_DATABASE_URL, echo=True)
+async_engine = create_async_engine(
+    ASYNC_DATABASE_URL,
+    echo=True,
+    pool_timeout=30,
+    pool_recycle=1800,
+    pool_pre_ping=True
+)
 AsyncSessionLocal = sessionmaker(async_engine, class_=AsyncSession, expire_on_commit=False)
 
 # Sync engine for Alembic and utilities
-sync_engine = create_engine(settings.DATABASE_URL)
+sync_engine = create_engine(
+    settings.DATABASE_URL,
+    pool_timeout=30,
+    pool_recycle=1800,
+    pool_pre_ping=True
+)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=sync_engine)
 
 Base = declarative_base()

@@ -9,21 +9,36 @@ from PIL import Image
 import io
 import time
 import asyncio
+import os
 from ..models.prediction import Prediction
 from ..models.user import User
 from ..schemas.prediction import PredictionCreate, PredictionUpdate
 from ..utils.image_processing import process_image_for_prediction
-from ..utils.model_utils import load_model, predict_image
+from ..utils.model_utils import load_model,load_model_auto, predict_image
 from ..utils.aws_utils import upload_image_to_s3
+from ..core.config import settings
 
 class PredictionService:
-    def __init__(self, db: AsyncSession, model_path: str = "path/to/your/model.pth"):
+    def __init__(self, db: AsyncSession, model_path: str = None):
+        if model_path is None:
+            model_path = settings.MODEL_PATH
+            if not model_path:
+                raise ValueError("MODEL_PATH environment variable is not set")
+            base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # goes from services/ to app/
+            model_path = os.path.join(base_dir, os.path.normpath(model_path))  # normalize and join
+
+            model_path = os.path.abspath(model_path)  # final resolved absolute path
+
+        if not os.path.exists(model_path):
+            raise FileNotFoundError(f"Model file not found: {model_path}")
+        
         self.db = db
         self.model_path = model_path
         self.model = None
-        self.class_names = ["NORMAL", "PNEUMONIA"]  # Adjust based on your model
+        self.model_class = 'Net'
+        self.class_names = ["NORMAL", "PNEUMONIA"]
         
-        # Image preprocessing transform (for inference, not training)
+        # Image preprocessing transform (for inference)
         self.test_transform = transforms.Compose([
             transforms.Resize((224, 224)),
             transforms.CenterCrop((224, 224)),
@@ -38,9 +53,9 @@ class PredictionService:
             # Run in thread pool to avoid blocking
             loop = asyncio.get_event_loop()
             self.model = await loop.run_in_executor(
-                None, 
+                None,
                 load_model, 
-                self.model_path
+                self.model_path,
             )
     
     async def create_prediction(
@@ -132,6 +147,7 @@ class PredictionService:
     
     async def process_image(self, image_file) -> torch.Tensor:
         """Process upoaded image for model input"""
+        print("Processing image....")
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(
             None,
@@ -142,6 +158,7 @@ class PredictionService:
     
     async def predict(self, processed_image: torch.Tensor) -> dict:
         """Run inference on processed image"""
+        print("Predicting from image...")
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(
             None,

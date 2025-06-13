@@ -27,7 +27,6 @@ async def register(
         # create user
         user_create = UserCreate(**user_data.dict())
         user = await auth_service.create_user(user_create)
-        ``
         # create tokens.
         access_token = create_access_token(data={"sub": str(user.id)})
         refresh_token = create_refresh_token(data={"sub": str(user.id)})
