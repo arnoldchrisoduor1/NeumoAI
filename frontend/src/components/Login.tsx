@@ -7,8 +7,12 @@ import { Mail, Lock } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import InputComponent from '@/components/InputComponent';
 import Button from '@/components/Button';
+import { useRouter } from 'next/navigation';
 
 const Login = ({ switchToRegister }: { switchToRegister: () => void }) => {
+
+  const router = useRouter();
+
   const { login, isLoading, error } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
@@ -26,6 +30,7 @@ const Login = ({ switchToRegister }: { switchToRegister: () => void }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     await login(formData.email, formData.password);
+    router.push('/prediction');
   };
 
   return (

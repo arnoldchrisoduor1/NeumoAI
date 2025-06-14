@@ -1,15 +1,19 @@
 // components/auth/Register.tsx
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Mail, Lock, User } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import InputComponent from '@/components/InputComponent';
 import Button from '@/components/Button';
+import { useRouter } from 'next/navigation';
 
 const Register = ({ switchToLogin }: { switchToLogin: () => void }) => {
-  const { register, isLoading, error } = useAuth();
+
+  const router = useRouter();
+   
+  const { register, isLoading, error, isAuthenticated } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -33,6 +37,7 @@ const Register = ({ switchToLogin }: { switchToLogin: () => void }) => {
       formData.username,
       formData.full_name
     );
+    router.push('/prediction')
   };
 
   return (
