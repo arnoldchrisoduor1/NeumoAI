@@ -112,7 +112,7 @@ const Features = () => {
               {/* Gradient border effect */}
               <div className="absolute inset-0 rounded-2xl bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" style={{
                 backgroundImage: `linear-gradient(to right, var(--tw-gradient-stops))`,
-                backgroundImage: `linear-gradient(to right, ${feature.color.replace('from-', '').replace('to-', '').split(' ').map(c => `var(--tw-${c})`).join(', ')})`
+                // backgroundImage: `linear-gradient(to right, ${feature.color.replace('from-', '').replace('to-', '').split(' ').map(c => `var(--tw-${c})`).join(', ')})`
               }}></div>
               
               <div className="relative h-full backdrop-blur-sm bg-[rgba(15,12,41,0.6)] border border-[rgba(255,255,255,0.1)] rounded-2xl p-8 overflow-hidden group-hover:border-[rgba(255,255,255,0.2)] transition-all duration-300">
