@@ -93,7 +93,7 @@ export default function Home() {
 
       {/* Content container that scrolls over the fixed background */}
       <div className="relative z-10">
-        <AnimatePresence mode="wait">
+        <AnimatePresence>
           <Hero />
           <Features />
           <FAQ />
