@@ -193,9 +193,9 @@ const Hero = () => {
             className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16"
           >
             <button className="relative px-8 py-3.5 rounded-xl bg-gradient-to-r from-purple-600 to-blue-500 text-white font-semibold overflow-hidden group">
-              <span className="relative z-10 flex items-center">
+              <a href="/prediction" className="relative z-10 flex items-center">
                 Try Live Demo <ArrowRight className="w-5 h-5 ml-2" />
-              </span>
+              </a>
               <motion.span
                 initial={{ x: -100, opacity: 0 }}
                 animate={{ x: 400, opacity: 0.4 }}
@@ -208,9 +208,9 @@ const Hero = () => {
               />
             </button>
 
-            <button className="px-8 py-3.5 rounded-xl border-2 border-purple-400/30 bg-purple-900/20 text-purple-100 font-semibold backdrop-blur-sm hover:border-purple-400/50 transition-all">
+            <a href="/whitepaper" className="px-8 py-3.5 rounded-xl border-2 border-purple-400/30 bg-purple-900/20 text-purple-100 font-semibold backdrop-blur-sm hover:border-purple-400/50 transition-all">
               Read White Paper
-            </button>
+            </a>
           </motion.div>
 
           {/* Stats */}

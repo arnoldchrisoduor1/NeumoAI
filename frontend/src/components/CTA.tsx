@@ -13,11 +13,11 @@ const CTA = () => {
       className="relative overflow-hidden my-20"
     >
       {/* Background elements */}
-      <div className="absolute inset-0 overflow-hidden">
+      {/* <div className="absolute inset-0 overflow-hidden">
         <div className="absolute -top-20 -left-20 w-64 h-64 bg-purple-500 rounded-full filter blur-3xl opacity-20 animate-blob"></div>
         <div className="absolute -bottom-20 -right-20 w-64 h-64 bg-blue-500 rounded-full filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
         <div className="absolute top-1/2 right-1/4 w-48 h-48 bg-pink-500 rounded-full filter blur-3xl opacity-20 animate-blob animation-delay-4000"></div>
-      </div>
+      </div> */}
       
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="backdrop-blur-xl bg-gradient-to-br from-[rgba(15,12,41,0.7)] to-[rgba(42,8,69,0.7)] border border-[rgba(255,255,255,0.1)] rounded-3xl shadow-2xl overflow-hidden">
@@ -72,7 +72,7 @@ const CTA = () => {
                 className="flex flex-col sm:flex-row justify-center gap-4"
               >
                 <a
-                  href="#"
+                  href="/authentication"
                   className="relative group flex items-center justify-center px-8 py-4 bg-gradient-to-r from-purple-600 to-blue-500 rounded-xl shadow-lg hover:shadow-purple-500/30 transition-all duration-300 overflow-hidden"
                 >
                   <span className="absolute inset-0 bg-gradient-to-r from-purple-700 to-blue-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
@@ -82,7 +82,7 @@ const CTA = () => {
                 </a>
                 
                 <a
-                  href="#"
+                  href="/prediction"
                   className="relative group flex items-center justify-center px-8 py-4 bg-transparent border border-[rgba(255,255,255,0.2)] rounded-xl hover:bg-[rgba(255,255,255,0.05)] transition-all duration-300 overflow-hidden"
                 >
                   <span className="absolute inset-0 border border-transparent group-hover:border-[rgba(255,255,255,0.1)] transition-all duration-300"></span>
