@@ -15,7 +15,7 @@ export default function Home() {
         
         {/* Large floating circles */}
         <div className="absolute inset-0 opacity-20">
-          {[...Array(20)].map((_, i) => (
+          {[...Array(10)].map((_, i) => (
             <div
               key={`large-${i}`}
               className="absolute rounded-full bg-[#6a00ff]"
@@ -34,7 +34,7 @@ export default function Home() {
         
         {/* Medium particles */}
         <div className="absolute inset-0 opacity-30">
-          {[...Array(20)].map((_, i) => (
+          {[...Array(10)].map((_, i) => (
             <div
               key={`medium-${i}`}
               className="absolute rounded-full bg-[#8a2be2]"
@@ -53,7 +53,7 @@ export default function Home() {
         
         {/* Small fast-moving particles */}
         <div className="absolute inset-0 opacity-40">
-          {[...Array(50)].map((_, i) => (
+          {[...Array(20)].map((_, i) => (
             <div
               key={`small-${i}`}
               className="absolute rounded-full bg-[#9370db]"
@@ -72,7 +72,7 @@ export default function Home() {
         
         {/* Sparkles */}
         <div className="absolute inset-0 opacity-70">
-          {[...Array(20)].map((_, i) => (
+          {[...Array(10)].map((_, i) => (
             <div
               key={`sparkle-${i}`}
               className="absolute bg-white"
