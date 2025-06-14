@@ -156,17 +156,13 @@ const NavBar = () => {
                 type='submit'
                 disabled={isLoading}
                 className="ml-4 flex items-center space-x-2"
-              >
-                <LogOut className="w-4 h-4" />
-              </Button> :
+              />:
               <Button
                 title="Sign In"
                 onClick={goToSignIn}
                 variant="outline"
                 className="ml-4 flex items-center space-x-2"
-              >
-                <LogIn className="w-4 h-4" />
-              </Button>
+              />
               }
             </div>
 
@@ -179,17 +175,13 @@ const NavBar = () => {
                 onClick={handleLogout}
                 variant="outline"
                 className="ml-4 flex items-center space-x-2"
-              >
-                <LogOut className="w-4 h-4" />
-              </Button> :
+              /> :
               <Button
                 title="Sign In"
                 onClick={goToSignIn}
                 variant="outline"
                 className="ml-4 flex items-center space-x-2"
-              >
-                <LogIn className="w-4 h-4" />
-              </Button>
+              />
               }
               
               <button 
@@ -261,10 +253,7 @@ const NavBar = () => {
                   onClick={handleLogout}
                   variant="outline"
                   className="w-full flex items-center justify-center space-x-2 mt-6"
-                >
-                  <LogOut className="w-4 h-4" />
-                  <span>Logout</span>
-                </Button>
+                />
               </div>
             </motion.div>
           </>
