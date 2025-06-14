@@ -55,6 +55,36 @@ const NavBar = () => {
     },
   ];
 
+  const LogoIcon = () => (
+      <motion.div 
+        initial={{ scale: 0.9 }}
+        animate={{ scale: 1 }}
+        transition={{ 
+          repeat: Infinity, 
+          repeatType: "reverse", 
+          duration: 2 
+        }}
+        className="relative w-10 h-10 flex items-center justify-center"
+      >
+        {/* Base circle */}
+        <div className="absolute w-8 h-8 rounded-full bg-gradient-to-br from-[color:var(--color-primary)] to-purple-600 opacity-20" />
+        
+        {/* Pulsing rings */}
+        <motion.div 
+          animate={{ scale: [1, 1.3], opacity: [0.3, 0] }}
+          transition={{ 
+            repeat: Infinity, 
+            duration: 3,
+            ease: "easeOut"
+          }}
+          className="absolute w-10 h-10 rounded-full border-2 border-[color:var(--color-primary)]"
+        />
+        
+        {/* Inner icon */}
+        <BrainCircuit className="w-5 h-5 text-transparent bg-clip-text bg-gradient-to-r from-[color:var(--color-primary)] to-purple-500" />
+      </motion.div>
+    );
+
   const handleLogout = async() => {
     await logout();
     console.log('User logged out');
@@ -81,16 +111,13 @@ const NavBar = () => {
           <div className="flex items-center justify-between h-16">
             {/* Logo/Brand */}
             <Link href="/" className="flex items-center space-x-2">
-              <motion.div
+              <LogoIcon />
+              <motion.span 
                 whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="flex items-center"
+                className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[color:var(--color-primary)] to-purple-500"
               >
-                <BrainCircuit className="w-6 h-6 text-transparent bg-clip-text bg-gradient-to-r from-[color:var(--color-primary)] to-purple-500" />
-                <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[color:var(--color-primary)] to-purple-500">
-                  NeumoAI
-                </span>
-              </motion.div>
+                NeumoAI
+              </motion.span>
             </Link>
 
             {/* Desktop Navigation */}
