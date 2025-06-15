@@ -48,11 +48,11 @@ const NavBar = () => {
       path: '/whitepaper', 
       icon: <FileText className="w-5 h-5" /> 
     },
-    { 
-      name: 'Account', 
-      path: '/account', 
-      icon: <User className="w-5 h-5" /> 
-    },
+    // { 
+    //   name: 'Account', 
+    //   path: '/account', 
+    //   icon: <User className="w-5 h-5" /> 
+    // },
   ];
 
   const LogoIcon = () => (
