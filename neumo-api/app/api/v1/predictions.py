@@ -1,4 +1,4 @@
-# prediction endpoints
+# prediction endpoints - UPDATED
 
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
 from fastapi.security import HTTPBearer
@@ -45,10 +45,16 @@ async def create_prediction(
             patient_symptoms=patient_symptoms
         )
         
+        # Get prediction with presigned URL for immediate access
+        prediction_with_url = await prediction_service.get_prediction_with_presigned_url(
+            prediction.id, 
+            current_user.id
+        )
+        
         return PredictionResponse(
             success=True,
             message="Prediction created successfully",
-            data=prediction
+            data=prediction_with_url if prediction_with_url else prediction
         )
         
     except ValueError as e:
@@ -66,6 +72,7 @@ async def create_prediction(
 async def get_user_predictions(
     skip: int = 0,
     limit: int = 100,
+    include_images: bool = False,
     current_user: UserModel = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
@@ -76,20 +83,23 @@ async def get_user_predictions(
         predictions = await prediction_service.get_user_predictions(
             user_id=current_user.id,
             skip=skip,
-            limit=limit
+            limit=limit,
+            include_presigned_urls=include_images
         )
         
-        # Convert to summary format for list view
-        prediction_summaries = [
-            PredictionSummary(
-                id=p.id,
-                prediction_class=p.prediction_class,
-                confidence_score=p.confidence_score,
-                created_at=p.created_at,
-                is_flagged=p.is_flagged,
-                reviewed_by_doctor=p.reviewed_by_doctor
-            ) for p in predictions
-        ]
+        if not include_images:
+            # Convert to summary format for list view
+            prediction_summaries = [
+                {
+                    "id": p["id"],
+                    "prediction_class": p["prediction_class"],
+                    "confidence_score": p["confidence_score"],
+                    "created_at": p["created_at"],
+                    "status": p["status"]
+                } for p in predictions
+            ]
+        else:
+            prediction_summaries = predictions
         
         return PredictionListResponse(
             success=True,
@@ -112,23 +122,19 @@ async def get_prediction(
     current_user: UserModel = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """Get specific prediction by ID"""
+    """Get specific prediction by ID with presigned URL"""
     prediction_service = PredictionService(db)
     
     try:
-        prediction = await prediction_service.get_prediction_by_id(prediction_id)
+        prediction = await prediction_service.get_prediction_with_presigned_url(
+            prediction_id, 
+            current_user.id
+        )
         
         if not prediction:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Prediction not found"
-            )
-        
-        # Check if user owns this prediction
-        if prediction.user_id != current_user.id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Not authorized to view this prediction"
+                detail="Prediction not found or not authorized"
             )
         
         return PredictionResponse(
@@ -178,10 +184,16 @@ async def update_prediction(
             update_data=update_data
         )
         
+        # Get updated prediction with presigned URL
+        prediction_with_url = await prediction_service.get_prediction_with_presigned_url(
+            prediction_id, 
+            current_user.id
+        )
+        
         return PredictionResponse(
             success=True,
             message="Prediction updated successfully",
-            data=updated_prediction
+            data=prediction_with_url if prediction_with_url else updated_prediction
         )
         
     except HTTPException:
@@ -198,7 +210,7 @@ async def delete_prediction(
     current_user: UserModel = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """Delete prediction"""
+    """Delete prediction and associated S3 image"""
     prediction_service = PredictionService(db)
     
     try:
@@ -213,7 +225,7 @@ async def delete_prediction(
                 detail="Prediction not found or not authorized"
             )
         
-        return {"message": "Prediction deleted successfully"}
+        return {"message": "Prediction and associated image deleted successfully"}
         
     except HTTPException:
         raise
@@ -252,14 +264,14 @@ async def get_predictions_by_class(
         user_predictions = [p for p in predictions if p.user_id == current_user.id]
         
         prediction_summaries = [
-            PredictionSummary(
-                id=p.id,
-                prediction_class=p.prediction_class,
-                confidence_score=p.confidence_score,
-                created_at=p.created_at,
-                is_flagged=p.is_flagged,
-                reviewed_by_doctor=p.reviewed_by_doctor
-            ) for p in user_predictions
+            {
+                "id": p.id,
+                "prediction_class": p.prediction_class,
+                "confidence_score": p.confidence_score,
+                "created_at": p.created_at.isoformat(),
+                "is_flagged": p.is_flagged,
+                "reviewed_by_doctor": p.reviewed_by_doctor
+            } for p in user_predictions
         ]
         
         return PredictionListResponse(
@@ -275,51 +287,6 @@ async def get_predictions_by_class(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve predictions: {str(e)}"
-        )
-
-@router.get("/flagged/all", response_model=PredictionListResponse)
-async def get_flagged_predictions(
-    skip: int = 0,
-    limit: int = 100,
-    current_user: UserModel = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
-):
-    """Get all flagged predictions for current user"""
-    prediction_service = PredictionService(db)
-    
-    try:
-        all_flagged = await prediction_service.get_flagged_predictions(skip=0, limit=1000)
-        
-        # Filter by current user
-        user_flagged = [p for p in all_flagged if p.user_id == current_user.id]
-        
-        # Apply pagination to user's flagged predictions
-        paginated_predictions = user_flagged[skip:skip + limit]
-        
-        prediction_summaries = [
-            PredictionSummary(
-                id=p.id,
-                prediction_class=p.prediction_class,
-                confidence_score=p.confidence_score,
-                created_at=p.created_at,
-                is_flagged=p.is_flagged,
-                reviewed_by_doctor=p.reviewed_by_doctor
-            ) for p in paginated_predictions
-        ]
-        
-        return PredictionListResponse(
-            success=True,
-            message="Flagged predictions retrieved successfully",
-            data=prediction_summaries,
-            total=len(user_flagged),
-            page=skip // limit + 1,
-            per_page=limit
-        )
-        
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to retrieve flagged predictions: {str(e)}"
         )
 
 @router.post("/{prediction_id}/flag")

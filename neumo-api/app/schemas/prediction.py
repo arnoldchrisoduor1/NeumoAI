@@ -15,6 +15,8 @@ class PredictionBase(BaseModel):
     patient_age: Optional[int] = Field(None, ge=0, le=150)
     patient_gender: Optional[Literal["Male", "Female", "Other"]] = None
     patient_symptoms: Optional[str] = None
+    is_flagged: Optional[bool] = None
+    reviewed_by_doctor: Optional[str] = None
     
 class PredictionCreate(PredictionBase):
     """Schema for creating a new prediction"""
@@ -62,8 +64,8 @@ class PredictionSummary(BaseModel):
     prediction_class: str
     confidence_score: float
     created_at: datetime
-    is_flagged: bool
-    reviewed_by_doctor: bool
+    is_flagged: Optional[bool] = None
+    reviewed_by_doctor: Optional[bool] = None
     
     class Config:
         from_attributes = True

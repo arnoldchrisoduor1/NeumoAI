@@ -1,7 +1,7 @@
-# prediction service logic
+# services/prediction_service.py
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from typing import Optional, List, Tuple
+from typing import Optional, List
 import torch
 import torch.nn as nn
 from torchvision import transforms
@@ -14,8 +14,8 @@ from ..models.prediction import Prediction
 from ..models.user import User
 from ..schemas.prediction import PredictionCreate, PredictionUpdate
 from ..utils.image_processing import process_image_for_prediction
-from ..utils.model_utils import load_model,load_model_auto, predict_image
-from ..utils.aws_utils import upload_image_to_s3
+from ..utils.model_utils import load_model, predict_image
+from ..utils.aws_utils import s3_manager
 from ..core.config import settings
 
 class PredictionService:
@@ -24,10 +24,9 @@ class PredictionService:
             model_path = settings.MODEL_PATH
             if not model_path:
                 raise ValueError("MODEL_PATH environment variable is not set")
-            base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # goes from services/ to app/
-            model_path = os.path.join(base_dir, os.path.normpath(model_path))  # normalize and join
-
-            model_path = os.path.abspath(model_path)  # final resolved absolute path
+            base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            model_path = os.path.join(base_dir, os.path.normpath(model_path))
+            model_path = os.path.abspath(model_path)
 
         if not os.path.exists(model_path):
             raise FileNotFoundError(f"Model file not found: {model_path}")
@@ -38,7 +37,7 @@ class PredictionService:
         self.model_class = 'Net'
         self.class_names = ["NORMAL", "PNEUMONIA"]
         
-        # Image preprocessing transform (for inference)
+        # Image preprocessing transform
         self.test_transform = transforms.Compose([
             transforms.Resize((224, 224)),
             transforms.CenterCrop((224, 224)),
@@ -50,7 +49,6 @@ class PredictionService:
     async def load_model_if_needed(self):
         """Load the PyTorch model if not already loaded"""
         if self.model is None:
-            # Run in thread pool to avoid blocking
             loop = asyncio.get_event_loop()
             self.model = await loop.run_in_executor(
                 None,
@@ -68,11 +66,13 @@ class PredictionService:
         patient_symptoms: Optional[str] = None
     ) -> Prediction:
         """
-        Complete prediction workfloow:
-        1. Process image for model input
-        2. Run inference
-        3. Upload image to AWS (placeholder for now)
-        4. Store prediction in database
+        Complete prediction workflow:
+        1. Verify user exists
+        2. Load model if needed
+        3. Process image for model input (keeping original file intact)
+        4. Run inference
+        5. Upload image to AWS S3 (in parallel with or after processing)
+        6. Store prediction in database
         """
         
         # Verify user exists
@@ -86,23 +86,40 @@ class PredictionService:
             # Step 1: Load model if needed
             await self.load_model_if_needed()
             
-            # Step 2: Process image for prediction
-            processed_image = await self.process_image(image_file)
+            # Step 2: Create a copy of the image file for processing
+            # This ensures we don't interfere with the original file
+            image_copy = self._create_image_copy(image_file)
             
-            # Step 3: Run prediction
+            # Step 3: Process image for prediction (using the copy)
+            processed_image = await self.process_image(image_copy)
+            
+            # Step 4: Run prediction
             prediction_result = await self.predict(processed_image)
             prediction_class = prediction_result["class"]
             confidence_score = prediction_result["confidence"]
             
-            # Step 4: Upload image to AWS (placeholder)
-            image_url = await self.upload_image(image_file, filename, user_id)
+            # Step 5: Upload original image to AWS S3
+            # Reset file pointer if necessary
+            if hasattr(image_file, 'seek'):
+                image_file.seek(0)
+            
+            # Determine content type
+            content_type = self._get_content_type(filename)
+            
+            # Upload to S3
+            image_url = await s3_manager.upload_image_to_s3(
+                image_file, 
+                filename, 
+                user_id, 
+                content_type
+            )
             
             # Calculate inference time
             inference_time = (time.time() - start_time) * 1000  # Convert to milliseconds
             
-            # Step 5: Create prediction record
+            # Step 6: Create prediction record
             prediction_data = PredictionCreate(
-                image_filename=image_url,  # Using URL as filename for now
+                image_filename=image_url,
                 prediction_class=prediction_class,
                 confidence_score=confidence_score,
                 inference_time_ms=inference_time,
@@ -145,9 +162,33 @@ class PredictionService:
             
             raise ValueError(f"Prediction failed: {str(e)}")
     
+    def _create_image_copy(self, image_file):
+        """Create a copy of the image file for processing"""
+        if hasattr(image_file, 'read'):
+            # If it's a file-like object, read and create BytesIO copy
+            content = image_file.read()
+            image_file.seek(0)  # Reset original file pointer
+            return io.BytesIO(content)
+        else:
+            # If it's already bytes, create BytesIO
+            return io.BytesIO(image_file)
+    
+    def _get_content_type(self, filename: str) -> str:
+        """Determine content type from filename"""
+        extension = filename.lower().split('.')[-1] if '.' in filename else 'jpg'
+        content_types = {
+            'jpg': 'image/jpeg',
+            'jpeg': 'image/jpeg',
+            'png': 'image/png',
+            'gif': 'image/gif',
+            'bmp': 'image/bmp',
+            'webp': 'image/webp'
+        }
+        return content_types.get(extension, 'image/jpeg')
+    
     async def process_image(self, image_file) -> torch.Tensor:
-        """Process upoaded image for model input"""
-        print("Processing image....")
+        """Process uploaded image for model input"""
+        print("Processing image...")
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(
             None,
@@ -168,25 +209,73 @@ class PredictionService:
             self.class_names
         )
     
-    async def upload_image(self, image_file, filename: str, user_id: int) -> str:
-        """Upload image to AWS S3 (placeholder for now)"""
-        # TODO: Implement AWS S3 upload
-        # For now, return a placeholder URL
-        return f"https://your-bucket.s3.amazonaws.com/predictions/{user_id}/{filename}"
-    
     async def get_prediction_by_id(self, prediction_id: int) -> Optional[Prediction]:
         """Get prediction by ID"""
         query = select(Prediction).where(Prediction.id == prediction_id)
         result = await self.db.execute(query)
         return result.scalar_one_or_none()
     
+    async def get_prediction_with_presigned_url(self, prediction_id: int, user_id: int = None) -> Optional[dict]:
+        """Get prediction with presigned URL for image access"""
+        prediction = await self.get_prediction_by_id(prediction_id)
+        if not prediction:
+            return None
+        
+        # Check if user has permission to view this prediction
+        if user_id and prediction.user_id != user_id:
+            return None
+        
+        try:
+            # Generate presigned URL for the image
+            presigned_url = await s3_manager.get_s3_presigned_url(
+                prediction.image_filename, 
+                expiration=3600  # 1 hour
+            )
+            
+            # Convert prediction to dict and add presigned URL
+            prediction_dict = {
+                "id": prediction.id,
+                "user_id": prediction.user_id,
+                "image_filename": prediction.image_filename,
+                "image_url": presigned_url,  # Add presigned URL for frontend access
+                "prediction_class": prediction.prediction_class,
+                "confidence_score": prediction.confidence_score,
+                "inference_time_ms": prediction.inference_time_ms,
+                "patient_age": prediction.patient_age,
+                "patient_gender": prediction.patient_gender,
+                "patient_symptoms": prediction.patient_symptoms,
+                "created_at": prediction.created_at.isoformat(),
+                "updated_at": prediction.updated_at.isoformat(),
+                "reviewed_by_doctor": prediction.reviewed_by_doctor,
+                "status": prediction.status,
+                "is_flagged": prediction.is_flagged
+            }
+            
+            return prediction_dict
+            
+        except Exception as e:
+            print(f"Error generating presigned URL: {e}")
+            # Return prediction without presigned URL if generation fails
+            return {
+                "id": prediction.id,
+                "user_id": prediction.user_id,
+                "image_filename": prediction.image_filename,
+                "prediction_class": prediction.prediction_class,
+                "confidence_score": prediction.confidence_score,
+                "inference_time_ms": prediction.inference_time_ms,
+                "created_at": prediction.created_at.isoformat(),
+                "updated_at": prediction.updated_at.isoformat(),
+                "status": prediction.status
+            }
+    
     async def get_user_predictions(
         self, 
         user_id: int, 
         skip: int = 0, 
-        limit: int = 100
-    ) -> List[Prediction]:
-        """Get all predicions for a user with pagination"""
+        limit: int = 100,
+        include_presigned_urls: bool = False
+    ) -> List[dict]:
+        """Get all predictions for a user with optional presigned URLs"""
         query = (
             select(Prediction)
             .where(Prediction.user_id == user_id)
@@ -195,14 +284,35 @@ class PredictionService:
             .order_by(Prediction.created_at.desc())
         )
         result = await self.db.execute(query)
-        return result.scalars().all()
+        predictions = result.scalars().all()
+        
+        if not include_presigned_urls:
+            return [
+                {
+                    "id": p.id,
+                    "prediction_class": p.prediction_class,
+                    "confidence_score": p.confidence_score,
+                    "created_at": p.created_at.isoformat(),
+                    "status": p.status
+                }
+                for p in predictions
+            ]
+        
+        # Generate presigned URLs for each prediction
+        predictions_with_urls = []
+        for prediction in predictions:
+            pred_dict = await self.get_prediction_with_presigned_url(prediction.id, user_id)
+            if pred_dict:
+                predictions_with_urls.append(pred_dict)
+        
+        return predictions_with_urls
     
     async def update_prediction(
         self, 
         prediction_id: int, 
         update_data: PredictionUpdate
     ) -> Optional[Prediction]:
-        """Update prediction (mainly for doctor reviews)"""
+        """Update prediction"""
         query = select(Prediction).where(Prediction.id == prediction_id)
         result = await self.db.execute(query)
         prediction = result.scalar_one_or_none()
@@ -210,7 +320,6 @@ class PredictionService:
         if not prediction:
             return None
         
-        # Update fields that are provided
         update_dict = update_data.dict(exclude_unset=True)
         for field, value in update_dict.items():
             setattr(prediction, field, value)
@@ -220,7 +329,7 @@ class PredictionService:
         return prediction
     
     async def get_flagged_predictions(self, skip: int = 0, limit: int = 100) -> List[Prediction]:
-        """Get all flaggd predictions for review"""
+        """Get all flagged predictions for review"""
         query = (
             select(Prediction)
             .where(Prediction.is_flagged == True)
@@ -237,7 +346,7 @@ class PredictionService:
         skip: int = 0, 
         limit: int = 100
     ) -> List[Prediction]:
-        """Get predictions by class (NORMAL/PNEUMONIA)"""
+        """Get predictions by class"""
         query = (
             select(Prediction)
             .where(Prediction.prediction_class == prediction_class)
@@ -249,13 +358,13 @@ class PredictionService:
         return result.scalars().all()
     
     async def get_user_by_id(self, user_id: int) -> Optional[User]:
-        """Get user by ID (helper method)"""
+        """Get user by ID"""
         query = select(User).where(User.id == user_id)
         result = await self.db.execute(query)
         return result.scalar_one_or_none()
     
     async def delete_prediction(self, prediction_id: int, user_id: int) -> bool:
-        """Delete a prediction (only by owner)"""
+        """Delete a prediction and its associated S3 image"""
         query = select(Prediction).where(
             Prediction.id == prediction_id,
             Prediction.user_id == user_id
@@ -266,8 +375,14 @@ class PredictionService:
         if not prediction:
             return False
         
-        # TODO: Also delete image from AWS S3
+        # Delete image from S3
+        try:
+            await s3_manager.delete_image_from_s3(prediction.image_filename)
+        except Exception as e:
+            print(f"Warning: Could not delete S3 image: {e}")
+            # Continue with database deletion even if S3 deletion fails
         
+        # Delete from database
         await self.db.delete(prediction)
         await self.db.commit()
         return True
