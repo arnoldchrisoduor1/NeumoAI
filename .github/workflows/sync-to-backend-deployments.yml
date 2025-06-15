@@ -26,7 +26,7 @@ jobs:
           rm -rf backend-repo/fastapi-service
           
           # Copy current code (excluding .git folder)
-          rsync -av --exclude='.git' --exclude='.github' ./ backend-repo/fastapi-service/
+          rsync -av neumo-api/ backend-repo/fastapi-service/
 
       - name: Commit and push to backend repo
         run: |
