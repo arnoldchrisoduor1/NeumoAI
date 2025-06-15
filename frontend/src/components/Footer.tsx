@@ -57,7 +57,7 @@ const Footer = () => {
     {
       title: "Company",
       links: [
-        { name: "About", href: "/about" },
+        { name: "About", href: "/whitepaper" },
         { name: "Privacy Policy", href: "/privacy" },
         { name: "Terms of Service", href: "/terms" },
       ],
@@ -66,8 +66,8 @@ const Footer = () => {
       title: "Support",
       links: [
         { name: "Contact", href: "/contact" },
-        { name: "Documentation", href: "/docs" },
-        { name: "FAQ", href: "/faq" },
+        { name: "Documentation", href: "/whitepaper" },
+        { name: "FAQ", href: "/" },
       ],
     },
   ];
@@ -75,19 +75,19 @@ const Footer = () => {
   const socialLinks = [
     {
       icon: <Github className="w-5 h-5" />,
-      href: "https://github.com/yourusername",
+      href: "https://github.com/arnoldchrisoduor1",
     },
     {
       icon: <Twitter className="w-5 h-5" />,
-      href: "https://twitter.com/yourusername",
+      href: "https://twitter.com/arnold0duor",
     },
     {
       icon: <Linkedin className="w-5 h-5" />,
-      href: "https://linkedin.com/in/yourusername",
+      href: "https://linkedin.com/in/arnoldchrisoduor",
     },
     {
       icon: <Mail className="w-5 h-5" />,
-      href: "mailto:contact@neumoai.com",
+      href: "mailto:contact@digitalwilderness9@gmail.com",
     },
   ];
 

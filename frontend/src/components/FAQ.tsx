@@ -22,7 +22,7 @@ const FAQ = () => {
     },
     {
       question: "Can NeumoAI integrate with existing hospital systems?",
-      answer: "Yes, we offer API integration with most major PACS (Picture Archiving and Communication Systems) and EHR (Electronic Health Record) platforms. Our team can assist with implementation."
+      answer: "This feature is planned for the end of Q4, join the newsletter to be the first to know."
     },
     {
       question: "What's the typical processing time for an image analysis?",

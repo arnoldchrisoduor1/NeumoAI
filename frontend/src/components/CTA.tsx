@@ -100,7 +100,7 @@ const CTA = () => {
                 transition={{ delay: 0.8 }}
                 className="text-sm text-gray-400 mt-8"
               >
-                No credit card required. 14-day free trial.
+                {/* No credit card required. 14-day free trial. */}
               </motion.p>
             </div>
           </div>
