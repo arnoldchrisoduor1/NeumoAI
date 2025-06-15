@@ -3,8 +3,15 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
+interface User {
+  email: string;
+  username?: string;
+  full_name?: string;
+  [key: string]: any;
+}
+
 interface AuthContextType {
-  user: any;
+  user: User | null;
   token: string | null;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
@@ -12,6 +19,7 @@ interface AuthContextType {
   logout: () => void;
   isLoading: boolean;
   error: string | null;
+  isInitialized: boolean; // Add this to track initialization
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -41,9 +49,10 @@ const logger = {
   }
 };
 
-// Storage utilities
+// Storage utilities with better error handling
 const storage = {
   setItem: (key: string, value: any) => {
+    if (typeof window === 'undefined') return; // Server-side check
     try {
       localStorage.setItem(key, JSON.stringify(value));
       logger.info(`Stored ${key} in localStorage`);
@@ -52,6 +61,7 @@ const storage = {
     }
   },
   getItem: (key: string) => {
+    if (typeof window === 'undefined') return null; // Server-side check
     try {
       const item = localStorage.getItem(key);
       if (item) {
@@ -65,6 +75,7 @@ const storage = {
     }
   },
   removeItem: (key: string) => {
+    if (typeof window === 'undefined') return; // Server-side check
     try {
       localStorage.removeItem(key);
       logger.info(`Removed ${key} from localStorage`);
@@ -73,6 +84,7 @@ const storage = {
     }
   },
   clear: () => {
+    if (typeof window === 'undefined') return; // Server-side check
     try {
       localStorage.removeItem(STORAGE_KEYS.TOKEN);
       localStorage.removeItem(STORAGE_KEYS.USER);
@@ -84,37 +96,47 @@ const storage = {
 };
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
 
-  const isAuthenticated = Boolean(token && user);
+  // Compute isAuthenticated based on both token and user
+  const isAuthenticated = Boolean(token && user && isInitialized);
 
+  // Initialize auth state from localStorage on mount
   useEffect(() => {
-    logger.info('Initializing auth context from localStorage');
-    try {
-      const storedToken = storage.getItem(STORAGE_KEYS.TOKEN);
-      const storedUser = storage.getItem(STORAGE_KEYS.USER);
+    const initializeAuth = () => {
+      logger.info('Initializing auth context from localStorage');
+      try {
+        const storedToken = storage.getItem(STORAGE_KEYS.TOKEN);
+        const storedUser = storage.getItem(STORAGE_KEYS.USER);
 
-      if (storedToken && storedUser) {
-        setToken(storedToken);
-        setUser(storedUser);
-        logger.success('Auth state restored from localStorage', { 
-          user: storedUser?.email || 'Unknown',
-          hasToken: Boolean(storedToken)
-        });
-      } else {
-        logger.info('No stored auth data found');
+        if (storedToken && storedUser) {
+          setToken(storedToken);
+          setUser(storedUser);
+          logger.success('Auth state restored from localStorage', { 
+            user: storedUser?.email || 'Unknown',
+            hasToken: Boolean(storedToken)
+          });
+        } else {
+          logger.info('No stored auth data found');
+        }
+      } catch (error) {
+        logger.error('Failed to initialize auth state from localStorage', error);
+      } finally {
+        setIsInitialized(true);
       }
-    } catch (error) {
-      logger.error('Failed to initialize auth state from localStorage', error);
-    } finally {
-      setIsInitialized(true);
+    };
+
+    // Only run on client side
+    if (typeof window !== 'undefined') {
+      initializeAuth();
     }
   }, []);
 
+  // Sync auth state to localStorage when it changes
   useEffect(() => {
     if (!isInitialized) return;
 
@@ -125,6 +147,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       storage.clear();
     }
   }, [token, user, isInitialized]);
+
+  // Clear error when auth state changes
+  useEffect(() => {
+    if (error && (token || user)) {
+      setError(null);
+    }
+  }, [token, user, error]);
 
   const login = async (email: string, password: string) => {
     logger.info('Login attempt started', { email });
@@ -140,9 +169,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         body: JSON.stringify({ email, password }),
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        const errorData = await response.json();
-        const errorMessage = errorData.detail || errorData.message || 'Login failed';
+        const errorMessage = data.detail || data.message || 'Login failed';
         logger.error('Login failed - API error', { 
           status: response.status,
           error: errorMessage,
@@ -150,18 +180,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         });
         throw new Error(errorMessage);
       }
-
-      const data = await response.json();
       
       if (!data.access_token) {
         logger.error('Login failed - no access token in response', data);
         throw new Error('No access token received from server');
       }
 
-      const userData = { email, ...data.user };
+      const userData: User = { 
+        email, 
+        ...(data.user || {})
+      };
       
-      setToken(data.access_token);
+      // Update state in the correct order
       setUser(userData);
+      setToken(data.access_token);
       
       logger.success('Login successful', { 
         user: email,
@@ -172,7 +204,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred during login';
       setError(errorMessage);
+      setUser(null);
+      setToken(null);
       logger.error('Login process failed', { error: errorMessage, email });
+      throw err; // Re-throw for component handling
     } finally {
       setIsLoading(false);
       logger.info('Login attempt completed', { email });
@@ -193,9 +228,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         body: JSON.stringify({ email, password, username, full_name }),
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        const errorData = await response.json();
-        const errorMessage = errorData.detail || errorData.message || 'Registration failed';
+        const errorMessage = data.detail || data.message || 'Registration failed';
         logger.error('Registration failed - API error', { 
           status: response.status,
           error: errorMessage,
@@ -204,18 +240,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         });
         throw new Error(errorMessage);
       }
-
-      const data = await response.json();
       
       if (!data.access_token) {
         logger.error('Registration failed - no access token in response', data);
         throw new Error('No access token received from server');
       }
 
-      const userData = { email, username, full_name, ...data.user };
+      const userData: User = { 
+        email, 
+        username, 
+        full_name, 
+        ...(data.user || {})
+      };
       
-      setToken(data.access_token);
+      // Update state in the correct order
       setUser(userData);
+      setToken(data.access_token);
       
       logger.success('Registration successful', { 
         user: email,
@@ -227,7 +267,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred during registration';
       setError(errorMessage);
+      setUser(null);
+      setToken(null);
       logger.error('Registration process failed', { error: errorMessage, email, username });
+      throw err; // Re-throw for component handling
     } finally {
       setIsLoading(false);
       logger.info('Registration attempt completed', { email, username });
@@ -249,16 +292,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  // Debug logging for state changes
   useEffect(() => {
     if (isInitialized) {
       logger.info('Authentication state changed', {
         isAuthenticated,
         hasUser: Boolean(user),
         hasToken: Boolean(token),
-        userEmail: user?.email || null
+        userEmail: user?.email || null,
+        isInitialized
       });
     }
   }, [isAuthenticated, user, token, isInitialized]);
+
+  // Don't render children until initialized to prevent hydration issues
+  if (!isInitialized) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+          <p className="mt-2 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <AuthContext.Provider value={{ 
@@ -269,7 +326,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       register, 
       logout, 
       isLoading, 
-      error 
+      error,
+      isInitialized
     }}>
       {children}
     </AuthContext.Provider>

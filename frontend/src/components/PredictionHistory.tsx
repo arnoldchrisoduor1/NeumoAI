@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { History } from 'lucide-react';
 import  Button  from './Button';
 import Skeleton from './Skeleton';
+import { useEffect } from 'react';
 
 interface PredictionHistoryProps {
   isAuthenticated: boolean;
@@ -48,6 +49,15 @@ export const PredictionHistory = ({
       </div>
     );
   }
+
+  useEffect(() => {
+  // Your logic when isAuthenticated changes
+  if (isAuthenticated) {
+    console.log("User is authenticated");
+  } else {
+    console.log("User is not authenticated");
+  }
+}, [isAuthenticated]);
 
   return (
     <div className="space-y-4">

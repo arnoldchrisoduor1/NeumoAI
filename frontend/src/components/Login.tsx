@@ -83,6 +83,7 @@ const Login = ({ switchToRegister }: { switchToRegister: () => void }) => {
           <Button
             title={isLoading ? "Signing in..." : "Sign In"}
             type="submit"
+            variant='primary'
             disabled={isLoading}
             className="w-full py-3 rounded-lg"
           />

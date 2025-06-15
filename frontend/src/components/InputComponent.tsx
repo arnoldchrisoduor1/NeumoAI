@@ -44,7 +44,7 @@ const InputComponent: React.FC<InputComponentTypes> = ({
             type={isPassword ? (hide ? "password" : "text") : type}
             placeholder={placeholder}
             className={twMerge(
-              `bg-transparent outline-none w-full`,
+              `bg-transparent outline-none w-full text-white`,
               classwidth
             )}
             value={value}
