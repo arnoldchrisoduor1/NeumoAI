@@ -1,113 +1,143 @@
-// app/predict/page.tsx
+// app/predict/page.tsx - UPDATED
 "use client";
 
-import { useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
-import { usePrediction } from '@/contexts/PredictionContext';
-import ImageUpload from '@/components/ImageUpload';
-import PatientForm from '@/components/PatientForm';
-import PredictionResults from '@/components/PredictionResults';
+import { useState, useEffect } from 'react';
+import { PredictionData, usePrediction } from '@/contexts/PredictionContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { PredictionHeader } from '@/components/PredictionHeader';
+import { PredictionMainContent } from '@/components/PredictionMainContent';
+import { PredictionSidebar } from '@/components/PredictionSidebar';
+
 
 const PredictPage = () => {
-  const { prediction, isLoading, makePrediction, clearPrediction } = usePrediction();
+  const { 
+    prediction, 
+    isLoading, 
+    error, 
+    uploadProgress, 
+    makePrediction, 
+    clearPrediction,
+    getUserPredictions,
+    getPrediction
+  } = usePrediction();
+  
+  const { isAuthenticated } = useAuth();
   const [file, setFile] = useState<File | null>(null);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [isUploading, setIsUploading] = useState(false);
   const [isUploaded, setIsUploaded] = useState(false);
+  const [predictionsHistory, setPredictionsHistory] = useState<PredictionData[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [selectedPrediction, setSelectedPrediction] = useState<PredictionData | null>(null);
+  const [showHistory, setShowHistory] = useState(false);
 
   const handleFileSelect = (selectedFile: File) => {
     setFile(selectedFile);
     setIsUploaded(false);
-    setUploadProgress(0);
+    clearPrediction();
+    setSelectedPrediction(null);
   };
 
   const handleRemoveFile = () => {
     setFile(null);
     setIsUploaded(false);
-    setUploadProgress(0);
+    clearPrediction();
   };
 
   const handleSubmitPatientInfo = async (age: number, gender: string, symptoms: string) => {
     if (!file) return;
 
-    setIsUploading(true);
-    
-    // Simulate upload progress (in a real app, you'd track actual upload progress)
-    const interval = setInterval(() => {
-      setUploadProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          setIsUploading(false);
-          setIsUploaded(true);
-          return 100;
-        }
-        return prev + 10;
-      });
-    }, 200);
-
     try {
       await makePrediction(file, age, gender, symptoms);
-    } finally {
-      clearInterval(interval);
-      setIsUploading(false);
       setIsUploaded(true);
+      if (isAuthenticated) {
+        fetchPredictionsHistory();
+      }
+    } catch (err) {
+      console.error('Prediction failed:', err);
+      setIsUploaded(false);
     }
   };
 
   const handleReset = () => {
     setFile(null);
     setIsUploaded(false);
-    setUploadProgress(0);
     clearPrediction();
+    setSelectedPrediction(null);
   };
+
+  const fetchPredictionsHistory = async () => {
+    if (!isAuthenticated) return;
+    
+    setLoadingHistory(true);
+    try {
+      const predictions = await getUserPredictions(true);
+      setPredictionsHistory(predictions);
+    } catch (err) {
+      console.error('Failed to fetch predictions history:', err);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
+  const loadPredictionDetails = async (id: number) => {
+    try {
+      const prediction = await getPrediction(id);
+      if (prediction) {
+        setSelectedPrediction(prediction);
+        setShowHistory(false);
+      }
+    } catch (err) {
+      console.error('Failed to load prediction details:', err);
+    }
+  };
+
+  const handleLoginClick = () => {
+    // Implement your login navigation here
+    console.log('Navigate to login');
+  };
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchPredictionsHistory();
+    }
+  }, [isAuthenticated]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0f0c29] via-[#302b63] to-[#24243e] py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto mt-20">
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-12"
-        >
-          <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[color:var(--color-primary)] to-purple-500 mb-2">
-            Neumo AI
-          </h1>
-          <p className="text-gray-400 max-w-lg mx-auto">
-            Upload a chest X-ray image to detect potential signs of pneumonia with our AI-powered analysis.
-          </p>
-        </motion.div>
+      <div className="max-w-7xl mx-auto mt-10">
+        <PredictionHeader error={error} />
 
-        <div className="space-y-8">
-          <AnimatePresence mode="wait">
-            {!prediction ? (
-              <motion.div
-                key="upload-form"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.3 }}
-                className="space-y-8"
-              >
-                <ImageUpload
-                  onFileSelect={handleFileSelect}
-                  onRemoveFile={handleRemoveFile}
-                  file={file}
-                  isUploading={isUploading}
-                  uploadProgress={uploadProgress}
-                  isUploaded={isUploaded}
-                />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Main Upload/Prediction Section */}
+          <div className="lg:col-span-2">
+            <PredictionMainContent
+              file={file}
+              isLoading={isLoading}
+              uploadProgress={uploadProgress}
+              isUploaded={isUploaded}
+              prediction={prediction}
+              selectedPrediction={selectedPrediction}
+              error={error}
+              onFileSelect={handleFileSelect}
+              onRemoveFile={handleRemoveFile}
+              onSubmitPatientInfo={handleSubmitPatientInfo}
+              onReset={handleReset}
+            />
+          </div>
 
-                {file && (
-                  <PatientForm
-                    onSubmit={handleSubmitPatientInfo}
-                    isLoading={isLoading || isUploading}
-                  />
-                )}
-              </motion.div>
-            ) : (
-              <PredictionResults prediction={prediction} onReset={handleReset} />
-            )}
-          </AnimatePresence>
+          {/* History Sidebar */}
+          <div className="lg:col-span-1">
+            <PredictionSidebar
+              isAuthenticated={isAuthenticated}
+              loadingHistory={loadingHistory}
+              predictionsHistory={predictionsHistory}
+              selectedPredictionId={selectedPrediction?.id || null}
+              currentPredictionId={prediction?.id || null}
+              showHistory={showHistory}
+              setShowHistory={setShowHistory}
+              onSelectPrediction={loadPredictionDetails}
+              onLoginClick={handleLoginClick}
+            />
+          </div>
         </div>
       </div>
     </div>
