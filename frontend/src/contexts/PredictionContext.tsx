@@ -57,7 +57,7 @@ export const PredictionProvider = ({ children }: { children: ReactNode }) => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const { token } = useAuth();
 
-  const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8000';
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
 
   const makePrediction = async (
     file: File,
