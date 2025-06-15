@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  fastapi:
+    build: ./fastapi-service
+    container_name: fastapi-app
+    ports:
+      - "8000:8000"  # This matches your existing Nginx config
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - NEON_DATABASE_URL=${NEON_DATABASE_URL}
+      - SECRET_KEY=${SECRET_KEY}
+      - ALGORITHM=${ALGORITHM}
+      - ACCESS_TOKEN_EXPIRE_MINUTES=${ACCESS_TOKEN_EXPIRE_MINUTES}
+      - REFRESH_TOKEN_EXPIRE_DAYS=${REFRESH_TOKEN_EXPIRE_DAYS}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_REGION=${AWS_REGION}
+      - S3_BUCKET_NAME=${S3_BUCKET_NAME}
+      - MODEL_PATH=${MODEL_PATH}
+      - MODEL_VERSION=${MODEL_VERSION}
+      - API_V1_STR=${API_V1_STR}
+      - PROJECT_NAME=${PROJECT_NAME}
+      - VERSION=${VERSION}
+      - DEBUG=${DEBUG}
+      - BACKEND_CORS_ORIGINS=${BACKEND_CORS_ORIGINS}
+    restart: unless-stopped
+
+networks:
+  backend-network:
+    driver: bridge
