@@ -13,3 +13,5 @@ alembic upgrade head
 ## To start the server.
 
 uvicorn app.main:app --reload
+
+updates
