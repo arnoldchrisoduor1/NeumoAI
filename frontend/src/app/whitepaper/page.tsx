@@ -8,25 +8,25 @@ const WhitePaper = () => {
     {
       title: "Phase 1: Baseline Model (64% Accuracy)",
       description: "Started with a simple CNN architecture—just convolutional, pooling, and dense layers. While it learned, the accuracy plateaued at 64%, showing clear underfitting.",
-      link: "https://lnkd.in/d2su33FA",
+      link: "https://www.kaggle.com/code/arnoldoduor/1st-variant-cnn-pneumonia-pred",
       icon: <Code className="w-5 h-5 text-purple-400" />
     },
     {
       title: "Phase 2: Image Augmentation (76% Accuracy)",
       description: "Introduced image augmentation (rotations, flips, zooms) in the data loader. This boosted accuracy to 76% by creating more varied training samples.",
-      link: "https://lnkd.in/dJsAfu_S",
+      link: "https://www.kaggle.com/code/arnoldoduor/2ndvariant-cnn-xray-pneumonia-prediction",
       icon: <Layers className="w-5 h-5 text-blue-400" />
     },
     {
       title: "Phase 3: Batch Normalization (90% Accuracy)",
-      description: "Integrated batch normalization between layers, stabilizing gradients and speeding up training. The result was a massive jump to 90% accuracy!",
-      link: "https://lnkd.in/dQFdX8F5",
+      description: "Integrated batch normalization between layers, stabilizing gradients and speeding up training. The result was a massive jump to 90% accuracy",
+      link: "https://www.kaggle.com/code/arnoldoduor/3rdvariant-cnn-xray-pneumonia-prediction",
       icon: <LineChart className="w-5 h-5 text-green-400" />
     },
     {
       title: "Phase 4: Regularization (96% Accuracy)",
-      description: "Added L2 regularization and Dropout layers to reduce overfitting. The model now achieves an impressive 96% accuracy on test data!",
-      link: "https://lnkd.in/diyQrp8h",
+      description: "Added L2 regularization and Dropout layers to reduce overfitting. The model now achieves an impressive 96% accuracy on test data",
+      link: "https://www.kaggle.com/code/arnoldoduor/4th-variant-cnn-xray-pneumonia-prediction/edit",
       icon: <FlaskConical className="w-5 h-5 text-pink-400" />
     }
   ];
@@ -112,7 +112,7 @@ const WhitePaper = () => {
             </h2>
             <div className="space-y-4 text-gray-300">
               <p>
-                Detecting pneumonia early can save lives—and with the power of deep learning, we can automate this process! This document details the architecture and iterative improvements of our Convolutional Neural Network (CNN) that classifies lung X-rays as "normal" or "pneumonia-positive" with 96% accuracy.
+                Detecting pneumonia early can save lives—and with the power of deep learning, we can automate this process. This document details the architecture and iterative improvements of our Convolutional Neural Network (CNN) that classifies lung X-rays as "normal" or "pneumonia-positive" with 96% accuracy.
               </p>
               <p>
                 The model evolved through four major phases, each introducing key architectural improvements that significantly boosted performance. Below we break down both the development journey and the final network architecture.
@@ -238,7 +238,7 @@ const WhitePaper = () => {
 
         {/* Footer */}
         <footer className="mt-20 text-center text-gray-400">
-          <p>© {new Date().getFullYear()} NeumoAI. Created by Arnold Oduor.</p>
+          {/* <p>© {new Date().getFullYear()} NeumoAI. Created by Arnold Oduor.</p> */}
           <p className="mt-2">This architecture continues to evolve with ongoing research.</p>
         </footer>
       </div>
