@@ -7,6 +7,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { PredictionHeader } from '@/components/PredictionHeader';
 import { PredictionMainContent } from '@/components/PredictionMainContent';
 import { PredictionSidebar } from '@/components/PredictionSidebar';
+import { Router } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 
 const PredictPage = () => {
@@ -20,7 +22,8 @@ const PredictPage = () => {
     getUserPredictions,
     getPrediction
   } = usePrediction();
-  
+
+  const router = useRouter();
   const { isAuthenticated } = useAuth();
   const [file, setFile] = useState<File | null>(null);
   const [isUploaded, setIsUploaded] = useState(false);
@@ -98,6 +101,9 @@ const PredictPage = () => {
   useEffect(() => {
     if (isAuthenticated) {
       fetchPredictionsHistory();
+    }
+    if (!isAuthenticated) {
+      router.push('/authentication')
     }
   }, [isAuthenticated]);
 

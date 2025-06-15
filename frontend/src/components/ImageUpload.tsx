@@ -125,7 +125,6 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
             </label>
           </motion.div>
 
-
           <AnimatePresence>
             {file && (
               <motion.div
