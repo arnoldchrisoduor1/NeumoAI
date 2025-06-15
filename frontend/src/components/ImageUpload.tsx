@@ -60,13 +60,23 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
   );
 
   const handleFileChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      if (e.target.files && e.target.files.length > 0) {
-        onFileSelect(e.target.files[0]);
-      }
-    },
-    [onFileSelect]
-  );
+  (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const selectedFile = e.target.files[0];
+
+      // Clone file to ensure memory stability across slow uploads
+      const reader = new FileReader();
+      reader.onload = () => {
+        const blob = new Blob([reader.result as ArrayBuffer], { type: selectedFile.type });
+        const fileCopy = new File([blob], selectedFile.name, { type: selectedFile.type });
+        onFileSelect(fileCopy);
+      };
+      reader.readAsArrayBuffer(selectedFile);
+    }
+  },
+  [onFileSelect]
+);
+
 
   return (
     <div className="w-full">
@@ -114,6 +124,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
               </div>
             </label>
           </motion.div>
+
 
           <AnimatePresence>
             {file && (
