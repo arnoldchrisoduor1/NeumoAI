@@ -16,7 +16,7 @@ jobs:
       - name: Checkout backend repo
         uses: actions/checkout@v4
         with:
-          repository: arnoldodchrisoduor1/Backend-Deployments
+          repository: arnoldchrisoduor1/Backend-Deployments
           token: ${{ secrets.BACKEND_REPO_TOKEN }}
           path: backend-repo
 
