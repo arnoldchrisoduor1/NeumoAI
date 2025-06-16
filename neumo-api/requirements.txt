@@ -48,4 +48,3 @@ structlog==23.2.0
 prometheus-fastapi-instrumentator
 prometheus-client
 prometheus-client[twisted]
-fastapi-prometheus
