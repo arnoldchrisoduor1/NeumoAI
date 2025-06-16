@@ -1,15 +1,15 @@
 "use client";
 
-import { motion, useTransform, useScroll, AnimatePresence } from "framer-motion";
-import { useRef } from "react";
-import { 
-  BrainCircuit, 
-  Pause, 
-  ScanEye, 
+import { motion, useTransform, useScroll } from "framer-motion";
+import { useMemo, useRef } from "react";
+import {
+  BrainCircuit,
+  Pause,
+  ScanEye,
   Activity,
   ArrowRight,
   ChevronsDown
-} from 'lucide-react';
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const Hero = () => {
@@ -21,35 +21,45 @@ const Hero = () => {
 
   const opacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
   const scale = useTransform(scrollYProgress, [0, 0.5], [1, 0.8]);
-  const position = useTransform(scrollYProgress, (pos) => {
-    return pos === 1 ? "relative" : "fixed";
-  });
+  const position = useTransform(scrollYProgress, (pos) =>
+    pos === 1 ? "relative" : "fixed"
+  );
 
-  const particles = Array.from({ length: 30 }).map((_, i) => {
-    const size = Math.random() * 5 + 2;
-    return {
+  const particles = useMemo(() => {
+    return Array.from({ length: 12 }).map((_, i) => ({
       id: i,
       x: Math.random() * 100,
       y: Math.random() * 100,
-      size,
+      size: Math.random() * 5 + 2,
       delay: Math.random() * 2,
       duration: Math.random() * 3 + 2
-    };
-  });
+    }));
+  }, []);
+
+  const neuralNodes = useMemo(() => {
+    return Array.from({ length: 4 }).map((_, i) => ({
+      id: i,
+      x: Math.random() * 100,
+      y: Math.random() * 100,
+      size: Math.random() * 40 + 20,
+      delay: Math.random() * 2,
+      duration: Math.random() * 4 + 8
+    }));
+  }, []);
 
   return (
-    <section 
+    <section
       ref={targetRef}
       className="relative w-full overflow-hidden bg-gradient-to-br from-[#0f0c29] via-[#2a0845] to-[#4a00e0]"
-      style={{ height: '100dvh' }} // Use dynamic viewport height
+      style={{ height: "100dvh" }}
     >
-      {/* Background elements (same as before) */}
+      {/* Animated particles */}
       <div className="absolute inset-0 overflow-hidden">
         {particles.map((particle) => (
           <motion.div
             key={particle.id}
             initial={{ opacity: 0 }}
-            animate={{ 
+            animate={{
               opacity: [0, 0.6, 0],
               y: [0, -100],
               x: [0, (Math.random() - 0.5) * 50]
@@ -59,7 +69,8 @@ const Hero = () => {
               duration: particle.duration,
               repeat: Infinity,
               repeatType: "loop",
-              ease: "linear"
+              ease: "easeOut",
+              repeatDelay: 1
             }}
             className="absolute rounded-full bg-gradient-to-r from-purple-400 to-blue-300"
             style={{
@@ -91,41 +102,35 @@ const Hero = () => {
 
       {/* Floating neural network nodes */}
       <div className="absolute inset-0">
-        {Array.from({ length: 8 }).map((_, i) => {
-          const size = Math.random() * 40 + 20;
-          const x = Math.random() * 100;
-          const y = Math.random() * 100;
-          const delay = Math.random() * 2;
-          
-          return (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, scale: 0.5 }}
-              animate={{ 
-                opacity: [0, 0.3, 0],
-                scale: [0.5, 1.2]
-              }}
-              transition={{
-                delay,
-                duration: Math.random() * 10 + 10,
-                repeat: Infinity,
-                repeatType: "loop",
-                ease: "easeInOut"
-              }}
-              className="absolute rounded-full border border-purple-400/30"
-              style={{
-                width: `${size}px`,
-                height: `${size}px`,
-                left: `${x}%`,
-                top: `${y}%`,
-                boxShadow: `0 0 20px ${size / 10}px rgba(110, 69, 226, 0.2)`
-              }}
-            />
-          );
-        })}
+        {neuralNodes.map((node) => (
+          <motion.div
+            key={node.id}
+            initial={{ opacity: 0, scale: 0.5 }}
+            animate={{
+              opacity: [0, 0.3, 0],
+              scale: [0.5, 1.2]
+            }}
+            transition={{
+              delay: node.delay,
+              duration: node.duration,
+              repeat: Infinity,
+              repeatType: "loop",
+              ease: "easeInOut",
+              repeatDelay: 1
+            }}
+            className="absolute rounded-full border border-purple-400/30"
+            style={{
+              width: `${node.size}px`,
+              height: `${node.size}px`,
+              left: `${node.x}%`,
+              top: `${node.y}%`,
+              boxShadow: `0 0 20px ${node.size / 10}px rgba(110, 69, 226, 0.2)`
+            }}
+          />
+        ))}
       </div>
 
-      {/* X-ray scan animation */}
+      {/* X-ray scan background */}
       <motion.div
         initial={{ opacity: 0, y: 50 }}
         animate={{ opacity: 0.1, y: 0 }}
@@ -133,9 +138,9 @@ const Hero = () => {
         className="absolute inset-0 bg-[url('/lung-scan.png')] bg-contain bg-center bg-no-repeat mix-blend-lighten"
       />
 
-      {/* Scrollable content container */}
+      {/* Scrollable content */}
       <div className="h-full overflow-y-auto">
-        <motion.div 
+        <motion.div
           style={{ opacity, scale, position }}
           className="w-full min-h-screen flex flex-col items-center justify-center px-4 sm:px-6 lg:px-8 text-center py-20"
         >
@@ -145,7 +150,7 @@ const Hero = () => {
             transition={{ delay: 0.2 }}
             className="relative z-10 py-10"
           >
-            {/* Animated tagline */}
+            {/* Tagline */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -160,7 +165,7 @@ const Hero = () => {
               </div>
             </motion.div>
 
-            {/* Main headline */}
+            {/* Headline */}
             <motion.h1
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -183,11 +188,12 @@ const Hero = () => {
               transition={{ delay: 0.8 }}
               className="text-xl text-gray-300 max-w-3xl mx-auto mb-10"
             >
-              Leveraging deep learning to analyze chest X-rays with <span className="font-semibold text-purple-300">96% accuracy</span>, 
-              helping clinicians detect pneumonia faster and more accurately.
+              Leveraging deep learning to analyze chest X-rays with{" "}
+              <span className="font-semibold text-purple-300">96% accuracy</span>, helping
+              clinicians detect pneumonia faster and more accurately.
             </motion.p>
 
-            {/* CTA buttons */}
+            {/* CTA */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -210,7 +216,10 @@ const Hero = () => {
                 />
               </button>
 
-              <a href="/whitepaper" className="px-8 py-3.5 rounded-xl border-2 border-purple-400/30 bg-purple-900/20 text-purple-100 font-semibold backdrop-blur-sm hover:border-purple-400/50 transition-all">
+              <a
+                href="/whitepaper"
+                className="px-8 py-3.5 rounded-xl border-2 border-purple-400/30 bg-purple-900/20 text-purple-100 font-semibold backdrop-blur-sm hover:border-purple-400/50 transition-all"
+              >
                 Read White Paper
               </a>
             </motion.div>
