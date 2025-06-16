@@ -35,12 +35,12 @@ const Features = () => {
       icon: <BarChart2 className="w-6 h-6" />,
       color: "from-pink-500 to-rose-500"
     },
-    {
-      title: "Seamless Integration",
-      description: "Works with your existing PACS and EHR systems",
-      icon: <Cpu className="w-6 h-6" />,
-      color: "from-violet-500 to-purple-500"
-    }
+    // {
+    //   title: "Seamless Integration",
+    //   description: "Works with your existing PACS and EHR systems",
+    //   icon: <Cpu className="w-6 h-6" />,
+    //   color: "from-violet-500 to-purple-500"
+    // }
   ];
 
   return (

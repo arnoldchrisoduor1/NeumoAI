@@ -71,7 +71,6 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Initialize and configure Prometheus instrumentator
 instrumentator = Instrumentator(
     should_group_status_codes=False,
     should_ignore_untemplated=True,
@@ -83,7 +82,8 @@ instrumentator = Instrumentator(
     inprogress_labels=True,
 )
 
-Instrumentator().instrument(app).expose(app)
+instrumentator.instrument(app).expose(app)
+
 
 # setting up the cors.
 app.add_middleware(
@@ -108,9 +108,9 @@ async def health_check():
     print("Making request to health route")
     return JSONResponse(content={"status": "healthy"}, status_code=200)
 
-@app.get("/metrics")
-async def metrics():
-    return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
+# @app.get("/metrics")
+# async def metrics():
+#     return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
 @app.get("/db-health")
 async def db_health_check():
