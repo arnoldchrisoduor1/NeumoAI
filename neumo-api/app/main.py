@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import logging
@@ -6,6 +6,8 @@ from .core.config import settings
 from .core.database import test_database_connection, check_migrations_status, get_database_health
 from .api.v1.auth import router as auth_router
 from .api.v1.predictions import router as prediction_router
+from prometheus_fastapi_instrumentator import Instrumentator
+from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -48,8 +50,6 @@ async def lifespan(app: FastAPI):
         else:
             logger.error(f"❌ Database connection failed: {connection_result.get('error', 'Unknown error')}")
             logger.error("🔧 Please check your DATABASE_URL and ensure the database is accessible")
-            # You can choose to raise an exception to prevent startup
-            # raise Exception("Database connection required for startup")
             logger.warning("⚠️  Continuing startup without database connection...")
             
     except Exception as e:
@@ -57,6 +57,7 @@ async def lifespan(app: FastAPI):
         logger.warning("⚠️  Continuing startup without database connection...")
     
     logger.info("✅ Pneumonia API startup complete!")
+    logger.info("📊 Prometheus metrics available at /metrics")
     
     yield
     
@@ -68,6 +69,20 @@ app = FastAPI(
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
     lifespan=lifespan
 )
+
+# Initialize and configure Prometheus instrumentator
+instrumentator = Instrumentator(
+    should_group_status_codes=False,
+    should_ignore_untemplated=True,
+    should_respect_env_var=True,
+    should_instrument_requests_inprogress=True,
+    excluded_handlers=[".*admin.*", "/metrics"],
+    env_var_name="ENABLE_METRICS",
+    inprogress_name="fastapi_inprogress",
+    inprogress_labels=True,
+)
+
+instrumentator.instrument(app).expose(app)
 
 # setting up the cors.
 app.add_middleware(

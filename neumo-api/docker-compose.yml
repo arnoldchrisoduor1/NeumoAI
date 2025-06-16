@@ -5,7 +5,7 @@ services:
     build: ./fastapi-service
     container_name: fastapi-app
     ports:
-      - "8000:8000"  # This matches your existing Nginx config
+      - "8000:8000"
     environment:
       - DATABASE_URL=${DATABASE_URL}
       - NEON_DATABASE_URL=${NEON_DATABASE_URL}
@@ -25,6 +25,51 @@ services:
       - DEBUG=${DEBUG}
       - BACKEND_CORS_ORIGINS=${BACKEND_CORS_ORIGINS}
     restart: unless-stopped
+    networks:
+      - backend-network
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    restart: unless-stopped
+    depends_on:
+      - fastapi
+    networks:
+      - backend-network
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+      - GF_USERS_ALLOW_SIGN_UP=false
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+    networks:
+      - backend-network
+
+volumes:
+  prometheus-data:
+  grafana-data:
 
 networks:
   backend-network:

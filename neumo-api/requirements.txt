@@ -45,3 +45,6 @@ flake8==6.1.0
 
 # Logging & Monitoring
 structlog==23.2.0
+prometheus-fastapi-instrumentator
+prometheus-client
+prometheus-client[twisted]

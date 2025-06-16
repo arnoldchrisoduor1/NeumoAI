@@ -34,6 +34,12 @@ class Settings(BaseSettings):
     # ================================= CORS =====================
     BACKEND_CORS_ORIGINS: List[str] = ["http://localhost:3000"]
     
+    # =========== GRAFANA CONFIGS ==============
+    # GRAFANA_CLOUD_PROMETHEUS_URL: str
+    # GRAFANA_CLOUD_PROMETHEUS_USER: str
+    # GRAFANA_CLOUD_API_KEY: str
+    # METRICS_PUSH_INTERVAL: str
+    
     class Config:
         env_file = ".env"
         
