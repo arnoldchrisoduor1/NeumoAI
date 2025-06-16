@@ -77,13 +77,13 @@ instrumentator = Instrumentator(
     should_ignore_untemplated=True,
     should_respect_env_var=True,
     should_instrument_requests_inprogress=True,
-    excluded_handlers=[".*admin.*", "/metrics"],
+    excluded_handlers=[".*admin.*"],
     env_var_name="ENABLE_METRICS",
     inprogress_name="fastapi_inprogress",
     inprogress_labels=True,
 )
 
-instrumentator.instrument(app).expose(app)
+instrumentator.instrument(app)
 
 # setting up the cors.
 app.add_middleware(
@@ -108,10 +108,9 @@ async def health_check():
     print("Making request to health route")
     return JSONResponse(content={"status": "healthy"}, status_code=200)
 
-# @app.get("/metrics")
-# async def get_metrics():
-#     """Expose Prometheus metrics endpoint."""
-#     return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
+@app.get("/metrics")
+async def metrics():
+    return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
 @app.get("/db-health")
 async def db_health_check():
