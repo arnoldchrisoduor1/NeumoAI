@@ -83,7 +83,7 @@ instrumentator = Instrumentator(
     inprogress_labels=True,
 )
 
-instrumentator.instrument(app)
+Instrumentator().instrument(app).expose(app)
 
 # setting up the cors.
 app.add_middleware(
