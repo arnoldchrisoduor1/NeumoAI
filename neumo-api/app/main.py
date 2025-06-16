@@ -107,6 +107,11 @@ async def health_check():
     print("Making request to health route")
     return {"status": "healthy"}
 
+@app.get("/metrics")
+async def get_metrics():
+    """Expose Prometheus metrics endpoint."""
+    return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
+
 @app.get("/db-health")
 async def db_health_check():
     """Comprehensive database health check endpoint."""
