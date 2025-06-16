@@ -7,7 +7,7 @@ import {
   Home, 
   BrainCircuit, 
   FileText, 
-  User, 
+  User,
   Rocket,
   Menu,
   X,
@@ -171,7 +171,7 @@ const NavBar = () => {
               {
                 isAuthenticated ? 
                 <Button
-                title="Logout"
+                title="Log Out"
                 onClick={handleLogout}
                 variant="outline"
                 className="ml-4 flex items-center space-x-2"

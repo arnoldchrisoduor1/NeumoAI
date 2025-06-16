@@ -1,7 +1,7 @@
 // contexts/AuthContext.tsx
 "use client";
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 
 interface User {
   email: string;
@@ -19,7 +19,8 @@ interface AuthContextType {
   logout: () => void;
   isLoading: boolean;
   error: string | null;
-  isInitialized: boolean; // Add this to track initialization
+  isInitialized: boolean;
+
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -52,7 +53,7 @@ const logger = {
 // Storage utilities with better error handling
 const storage = {
   setItem: (key: string, value: any) => {
-    if (typeof window === 'undefined') return; // Server-side check
+    if (typeof window === 'undefined') return;
     try {
       localStorage.setItem(key, JSON.stringify(value));
       logger.info(`Stored ${key} in localStorage`);
@@ -61,7 +62,7 @@ const storage = {
     }
   },
   getItem: (key: string) => {
-    if (typeof window === 'undefined') return null; // Server-side check
+    if (typeof window === 'undefined') return null;
     try {
       const item = localStorage.getItem(key);
       if (item) {
@@ -75,7 +76,7 @@ const storage = {
     }
   },
   removeItem: (key: string) => {
-    if (typeof window === 'undefined') return; // Server-side check
+    if (typeof window === 'undefined') return;
     try {
       localStorage.removeItem(key);
       logger.info(`Removed ${key} from localStorage`);
@@ -84,7 +85,7 @@ const storage = {
     }
   },
   clear: () => {
-    if (typeof window === 'undefined') return; // Server-side check
+    if (typeof window === 'undefined') return;
     try {
       localStorage.removeItem(STORAGE_KEYS.TOKEN);
       localStorage.removeItem(STORAGE_KEYS.USER);
@@ -101,9 +102,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [forceUpdate, setForceUpdate] = useState(0);
 
   // Compute isAuthenticated based on both token and user
   const isAuthenticated = Boolean(token && user && isInitialized);
+
+  // Batch state update function to ensure consistency
+  const updateAuthState = useCallback((newUser: User | null, newToken: string | null) => {
+    // Use functional updates to ensure consistency
+    setUser(newUser);
+    setToken(newToken);
+    
+    // Force a re-render by updating a timestamp or counter if needed
+    if (newUser && newToken) {
+      logger.success('Auth state updated', { 
+        user: newUser.email,
+        hasToken: Boolean(newToken)
+      });
+    }
+    setForceUpdate(prev => prev + 1);
+  }, []);
 
   // Initialize auth state from localStorage on mount
   useEffect(() => {
@@ -114,8 +132,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const storedUser = storage.getItem(STORAGE_KEYS.USER);
 
         if (storedToken && storedUser) {
-          setToken(storedToken);
-          setUser(storedUser);
+          // Use batch update
+          updateAuthState(storedUser, storedToken);
           logger.success('Auth state restored from localStorage', { 
             user: storedUser?.email || 'Unknown',
             hasToken: Boolean(storedToken)
@@ -134,7 +152,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (typeof window !== 'undefined') {
       initializeAuth();
     }
-  }, []);
+  }, [updateAuthState]);
 
   // Sync auth state to localStorage when it changes
   useEffect(() => {
@@ -191,9 +209,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         ...(data.user || {})
       };
       
-      // Update state in the correct order
-      setUser(userData);
-      setToken(data.access_token);
+      // Use batch update instead of separate setState calls
+      updateAuthState(userData, data.access_token);
       
       logger.success('Login successful', { 
         user: email,
@@ -204,10 +221,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred during login';
       setError(errorMessage);
-      setUser(null);
-      setToken(null);
+      updateAuthState(null, null); // Batch clear on error
       logger.error('Login process failed', { error: errorMessage, email });
-      throw err; // Re-throw for component handling
+      throw err;
     } finally {
       setIsLoading(false);
       logger.info('Login attempt completed', { email });
@@ -253,9 +269,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         ...(data.user || {})
       };
       
-      // Update state in the correct order
-      setUser(userData);
-      setToken(data.access_token);
+      // Use batch update instead of separate setState calls
+      updateAuthState(userData, data.access_token);
       
       logger.success('Registration successful', { 
         user: email,
@@ -267,22 +282,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred during registration';
       setError(errorMessage);
-      setUser(null);
-      setToken(null);
+      updateAuthState(null, null); // Batch clear on error
       logger.error('Registration process failed', { error: errorMessage, email, username });
-      throw err; // Re-throw for component handling
+      throw err;
     } finally {
       setIsLoading(false);
       logger.info('Registration attempt completed', { email, username });
     }
   };
 
-  const logout = () => {
+  const logout = useCallback(() => {
     logger.info('Logout initiated', { user: user?.email || 'Unknown' });
     
     try {
-      setUser(null);
-      setToken(null);
+      updateAuthState(null, null);
       setError(null);
       storage.clear();
       
@@ -290,7 +303,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } catch (error) {
       logger.error('Error during logout process', error);
     }
-  };
+  }, [user?.email, updateAuthState]);
 
   // Debug logging for state changes
   useEffect(() => {
@@ -327,7 +340,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       logout, 
       isLoading, 
       error,
-      isInitialized
+      isInitialized,
+      // forceUpdate
     }}>
       {children}
     </AuthContext.Provider>
