@@ -8,6 +8,7 @@ from .api.v1.auth import router as auth_router
 from .api.v1.predictions import router as prediction_router
 from prometheus_fastapi_instrumentator import Instrumentator
 from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
+from fastapi.responses import JSONResponse
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -105,12 +106,12 @@ async def root():
 @app.get("/health")
 async def health_check():
     print("Making request to health route")
-    return {"status": "healthy"}
+    return JSONResponse(content={"status": "healthy"}, status_code=200)
 
-@app.get("/metrics")
-async def get_metrics():
-    """Expose Prometheus metrics endpoint."""
-    return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
+# @app.get("/metrics")
+# async def get_metrics():
+#     """Expose Prometheus metrics endpoint."""
+#     return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
 @app.get("/db-health")
 async def db_health_check():
